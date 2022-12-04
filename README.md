@@ -4,7 +4,7 @@ Inspired by Javascript's [Promise](https://developer.mozilla.org/en-US/docs/Web/
 
 Sample Javascript Promise
 
-```
+```javascript
 const p = new Promise((resolve, reject)=>{
 	setTimeOut(()=>{
 		resolve("hola")
@@ -18,11 +18,15 @@ p.then((v)=>{
 })
 
 console.log("hi")
+
+// prints in the below order:
+// hi
+// resolved value=>  hola
 ```
 
 go-then's equivalent of the above Javascript Promise:
 
-```
+```golang
 	promise1 := promise.New()
 	defer promise1.Wait() // wait for the promise to execute
 
