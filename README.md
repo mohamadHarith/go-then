@@ -4,7 +4,7 @@ Inspired by Javascript's [Promise](https://developer.mozilla.org/en-US/docs/Web/
 
 Sample Javascript Promise
 
-```
+```javascript
 let promise = new Promise((resolve, reject) => {
   setTimeout(() => {
     resolve("world");
@@ -22,7 +22,7 @@ console.log("hello");
 
 go-then's equivalent of the above Javascript Promise:
 
-```
+```golang
 package main
 
 import (
