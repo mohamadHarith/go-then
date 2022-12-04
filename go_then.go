@@ -6,17 +6,27 @@ import (
 	"time"
 )
 
+const PROMISE_TIMEOUT_IN_SECS = 60
+
 type Promise struct {
 	resolveChannel chan any
-	rejectChannel  chan error
 	wg             sync.WaitGroup
+	errorHandler   func(err error)
+	timeOutInSecs  int
 }
 
-func New() *Promise {
+type Config struct {
+	TimeOutInSecs int
+}
+
+func New(config *Config) *Promise {
 
 	p := new(Promise)
 	p.resolveChannel = make(chan any, 1)
-	p.rejectChannel = make(chan error, 1)
+
+	if config != nil && config.TimeOutInSecs > 0 {
+		p.timeOutInSecs = config.TimeOutInSecs
+	}
 
 	return p
 }
@@ -26,12 +36,13 @@ func (p *Promise) Resolve(i any) {
 }
 
 func (p *Promise) Reject(i error) {
-	p.rejectChannel <- i
+	p.errorHandler(i)
+	p.wg.Done()
 }
 
-func (p *Promise) Execute(i func()) *Promise {
+func (p *Promise) Execute(task func()) *Promise {
 	p.wg.Add(1)
-	go i()
+	go task()
 
 	return p
 }
@@ -46,7 +57,7 @@ func (p *Promise) Then(callback func(i any)) *Promise {
 }
 
 func (p *Promise) thenExecutor(callback func(i any)) {
-	for i := 0; i < 60; i++ {
+	for i := 0; i < p.timeOutInSecs; i++ {
 		select {
 		case o := <-p.resolveChannel:
 			callback(o)
@@ -57,22 +68,10 @@ func (p *Promise) thenExecutor(callback func(i any)) {
 		time.Sleep(time.Second * 1)
 	}
 
-	p.rejectChannel <- errors.New("timeout")
+	p.errorHandler(errors.New("timeout"))
+	p.wg.Done()
 }
 
 func (p *Promise) Catch(errorHandler func(err error)) {
-	go p.catchExecutor(errorHandler)
-}
-
-func (p *Promise) catchExecutor(errorHandler func(err error)) {
-	for i := 0; i < 60; i++ {
-		select {
-		case o := <-p.rejectChannel:
-			errorHandler(o)
-			p.wg.Done()
-			return
-		default:
-		}
-		time.Sleep(time.Second * 1)
-	}
+	p.errorHandler = errorHandler
 }

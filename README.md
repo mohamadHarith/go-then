@@ -5,42 +5,49 @@ Inspired by Javascript's [Promise](https://developer.mozilla.org/en-US/docs/Web/
 Sample Javascript Promise
 
 ```
-const p = new Promise((resolve, reject)=>{
-	setTimeOut(()=>{
-		resolve("hola")
-	}, 5000)
+let promise = new Promise((resolve, reject) => {
+  setTimeout(() => {
+    resolve("world");
+  }, 5000);
+});
 
-p.then((v)=>{
-	console.log("resolved value=> ", v)
-}).catch((e)=>{
-	console.log("caught error=> ", v)
-})
-})
+promise.then((v) => {
+  console.log(v);
+}).catch((e) => {
+  console.log(v);
+});
 
-console.log("hi")
+console.log("hello");
 ```
 
 go-then's equivalent of the above Javascript Promise:
 
 ```
-	promise1 := promise.New()
-	defer promise1.Wait() // wait for the promise to execute
+package main
 
-	promise1.Execute(func() {
+import (
+	"log"
+	"time"
+
+	promise "github.com/mohamadHarith/go-then"
+)
+
+func main() {
+	promise := promise.New(&promise.Config{TimeOutInSecs: 60})
+	defer promise.Wait() // wait for the promise to execute
+
+	promise.Execute(func() {
 		// wait for 5 mins before resolving
 		time.Sleep(time.Second * 5)
-		promise1.Resolve("hola")
+		promise.Resolve("world")
 
 	}).Then(func(i any) {
-		log.Println("resolved value=> ", i)
+		log.Println(i)
 
 	}).Catch(func(err error) {
-		log.Println("caught err=> ", err)
+		log.Println(err)
 	})
 
-	log.Println("hi")
-
-	// prints in the below order:
-	// hi
-	// resolved value=>  hola
+	log.Println("hello")
+}
 ```
