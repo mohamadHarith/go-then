@@ -2,6 +2,8 @@
 
 Inspired by Javascript's [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise), go-then is a library that attempts to allow non-blocking execution of codes using goroutines, channels and wait groups.
 
+This repository is under active development. Any contribution is highly appreciated. ^_^
+
 Sample Javascript Promise
 
 ```javascript
