@@ -61,3 +61,5 @@ func main() {
 // hello
 // world
 ```
+
+Try it on [playground](https://go.dev/play/p/GevioARAp-S).
