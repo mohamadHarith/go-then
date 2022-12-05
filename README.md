@@ -20,6 +20,10 @@ promise.then((v) => {
 });
 
 console.log("hello");
+
+// output:
+// hello
+// world
 ```
 
 go-then's equivalent of the above Javascript Promise:
@@ -52,4 +56,8 @@ func main() {
 
 	log.Println("hello")
 }
+
+// output:
+// hello
+// world
 ```
