@@ -1,77 +1,87 @@
 package go_then
 
 import (
-	"errors"
+	"context"
 	"sync"
-	"time"
 )
 
-const PROMISE_TIMEOUT_IN_SECS = 60
-
 type Promise struct {
+	wg             *sync.WaitGroup
+	ctx            context.Context
 	resolveChannel chan any
-	wg             sync.WaitGroup
+	rejectChannel  chan error
+	callback       func(i any)
 	errorHandler   func(err error)
-	timeOutInSecs  int
 }
 
-type Config struct {
-	TimeOutInSecs int
-}
+type Resolver func(i any)
+type Rejector func(i error)
 
-func New(config *Config) *Promise {
+func New(ctx context.Context, executor func(resolve Resolver, reject Rejector)) *Promise {
 
 	p := new(Promise)
+	p.ctx = ctx
 	p.resolveChannel = make(chan any, 1)
+	p.rejectChannel = make(chan error, 1)
+	p.wg = &sync.WaitGroup{}
 
-	if config != nil && config.TimeOutInSecs > 0 {
-		p.timeOutInSecs = config.TimeOutInSecs
+	var resolver Resolver = func(i any) {
+		p.resolveChannel <- i
+		p.wg.Done()
+		close(p.resolveChannel)
 	}
+	var rejector Rejector = func(i error) {
+		p.rejectChannel <- i
+		p.wg.Done()
+		close(p.rejectChannel)
+	}
+
+	p.wg.Add(2)
+	go p.checker()
+	go executor(resolver, rejector)
 
 	return p
 }
 
-func (p *Promise) Resolve(i any) {
-	p.resolveChannel <- i
+func (p *Promise) Then(callback func(i any)) *Promise {
+	p.callback = callback
+
+	return p
 }
 
-func (p *Promise) Reject(i error) {
-	p.errorHandler(i)
-	p.wg.Done()
-}
-
-func (p *Promise) Execute(task func()) *Promise {
-	p.wg.Add(1)
-	go task()
+func (p *Promise) Catch(errorHandler func(i error)) *Promise {
+	p.errorHandler = errorHandler
 
 	return p
 }
 
 func (p *Promise) Wait() {
+	if p.wg == nil {
+		return
+	}
+
 	p.wg.Wait()
 }
 
-func (p *Promise) Then(callback func(i any)) *Promise {
-	go p.thenExecutor(callback)
-	return p
-}
-
-func (p *Promise) thenExecutor(callback func(i any)) {
-	for i := 0; i < p.timeOutInSecs; i++ {
+func (p *Promise) checker() {
+	defer p.wg.Done()
+	for {
 		select {
-		case o := <-p.resolveChannel:
-			callback(o)
-			p.wg.Done()
+		case <-p.ctx.Done():
+			if p.errorHandler != nil {
+				p.errorHandler(p.ctx.Err())
+			}
 			return
-		default:
+		case o := <-p.resolveChannel:
+			if p.callback != nil {
+				p.callback(o)
+			}
+			return
+		case err := <-p.rejectChannel:
+			if p.errorHandler != nil {
+				p.errorHandler(err)
+			}
+			return
 		}
-		time.Sleep(time.Second * 1)
 	}
-
-	p.errorHandler(errors.New("timeout"))
-	p.wg.Done()
-}
-
-func (p *Promise) Catch(errorHandler func(err error)) {
-	p.errorHandler = errorHandler
 }

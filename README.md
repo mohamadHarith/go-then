@@ -39,14 +39,11 @@ import (
 )
 
 func main() {
-	promise := promise.New(&promise.Config{TimeOutInSecs: 60})
-	defer promise.Wait() // wait for the promise to execute
-
-	promise.Execute(func() {
-		// wait for 5 mins before resolving
-		time.Sleep(time.Second * 5)
-		promise.Resolve("world")
-
+	ctx := context.Background()
+	promise.New(ctx, func(resolve promise.Resolver, reject promise.Rejector){
+		// some work
+		time.Sleep(time.Second*5)
+		resolve("world")
 	}).Then(func(i any) {
 		log.Println(i)
 
