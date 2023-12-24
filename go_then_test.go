@@ -3,6 +3,8 @@ package go_then
 import (
 	"context"
 	"errors"
+	"io"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -79,4 +81,33 @@ func TestPromiseWithCancel(t *testing.T) {
 
 	time.Sleep(time.Second * 2)
 	cancel()
+}
+
+func TestPromiseWithNetworkCall(t *testing.T) {
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	p := New(ctx, func(resolve Resolver, reject Rejector) {
+		resp, err := http.Get("https://catfact.ninja/fact")
+		if err != nil {
+			reject(err)
+			return
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			reject(err)
+			return
+		}
+		resolve(body)
+	}).Then(func(i any) {
+		resp, ok := i.([]byte)
+		if !ok {
+			t.Fatal("type assertion error")
+			return
+		}
+		t.Log(string(resp))
+	}).Catch(func(err error) {
+		t.Fatal(err)
+	})
+	defer p.Wait()
+
+	t.Log("fetching cat data")
 }
