@@ -111,3 +111,18 @@ func TestPromiseWithNetworkCall(t *testing.T) {
 
 	t.Log("fetching cat data")
 }
+
+func TestPromiseResolveMultiple(t *testing.T) {
+	p := New(
+		context.Background(),
+		func(resolve Resolver, reject Rejector) {
+			resolve("world")
+			resolve("hello")
+		}).Then(func(i any) {
+		if i != "world" {
+			t.Fatalf("data mismatch expected world but got %v ", i)
+			return
+		}
+	})
+	defer p.Wait()
+}
