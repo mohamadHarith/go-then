@@ -32,26 +32,37 @@ go-then's equivalent of the above Javascript Promise:
 package main
 
 import (
-	"log"
+	"context"
+	"fmt"
 	"time"
 
 	promise "github.com/mohamadHarith/go-then"
 )
 
 func main() {
-	ctx := context.Background()
-	promise.New(ctx, func(resolve promise.Resolver, reject promise.Rejector){
-		// some work
-		time.Sleep(time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	p := promise.New(ctx, func(resolve promise.Resolver, reject promise.Rejector) {
+
+		// simulate async task
+		time.Sleep(time.Second * 5)
+
 		resolve("world")
-	}).Then(func(i any) {
-		log.Println(i)
+
+	}).Then(func(resp any) {
+
+		fmt.Println(resp)
 
 	}).Catch(func(err error) {
-		log.Println(err)
+		fmt.Println("err: ", err)
 	})
 
-	log.Println("hello")
+	// wait for the promise to finish executing
+	// before exiting the main thread
+	defer p.Wait()
+
+	fmt.Println("hello")
 }
 
 // output:
@@ -59,4 +70,8 @@ func main() {
 // world
 ```
 
-Try it on [playground](https://go.dev/play/p/GevioARAp-S).
+## Features
+- Javascript promise like syntax.
+- Non-blocking execution.
+
+Try it on [playground](https://go.dev/play/p/GBG6AyJrZc4).
