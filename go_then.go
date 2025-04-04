@@ -7,6 +7,8 @@ import (
 
 type Promiser interface {
 	// TODO:
+	Then()
+	All()
 }
 
 type Resolver func(i any)
